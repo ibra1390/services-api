@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import AdminLayout from "./layouts/AdminLayout";
 import Users from "./components/users/Users";
 import Categories from "./components/categories/Categories";
+import Roles from "./components/roles/Roles";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 
 export default function App() {
@@ -31,7 +32,7 @@ export default function App() {
           element={<div className="p-8">Revisión Servicios</div>}
         />
         <Route path="schools" element={<div className="p-8">Escuelas</div>} />
-        <Route path="roles" element={<div className="p-8">Roles</div>} />
+        <Route path="roles" element={<Roles />} />
       </Route>
     </Routes>
   );
