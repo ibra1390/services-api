@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import AdminLayout from "./layouts/AdminLayout";
 import Users from "./components/users/Users";
+import Categories from "./components/categories/Categories";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 
 export default function App() {
@@ -23,7 +24,7 @@ export default function App() {
         <Route path="profile" element={<div className="p-8">Perfil</div>} />
         <Route
           path="categories"
-          element={<div className="p-8">Categorías</div>}
+          element={<Categories />} 
         />
         <Route
           path="services"
