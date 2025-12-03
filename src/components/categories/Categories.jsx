@@ -27,15 +27,9 @@ export default function Categories() {
       setLoading(true);
       setError(null);
       const data = await categoryService().getAll();
-      console.log("Datos recibidos de la API:", data);
       setCategories(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Error al obtener categorías:", err);
-      setError(
-        err.response?.data?.message || 
-        err.message || 
-        "Error al cargar las categorías"
-      );
+      setError(err.message || "Error al cargar las categorías");
     } finally {
       setLoading(false);
     }
@@ -50,33 +44,18 @@ export default function Categories() {
     return categories.filter(category => {
       const searchLower = searchTerm.toLowerCase();
       return (
-        (category.name && category.name.toLowerCase().includes(searchLower)) ||
-        (category.description && category.description.toLowerCase().includes(searchLower))
+        category.name?.toLowerCase().includes(searchLower) ||
+        category.description?.toLowerCase().includes(searchLower)
       );
     });
   };
+  
   const filteredCategories = getFilteredCategories();
 
-  // 5. Handlers para botones
+  // Handlers
   const handleEdit = (category) => {
     setSelectedCategory(category);
     setIsModalOpen(true);
-  };
-
-  const handleDelete = async (categoryId) => {
-    if (window.confirm("¿Estás seguro de que deseas eliminar esta categoría?")) {
-      try {
-        setIsSubmitting(true);
-        await categoryService().delete(categoryId);
-        await fetchCategories(); // Recargar la lista
-        alert("Categoría eliminada correctamente");
-      } catch (err) {
-        console.error("Error al eliminar categoría:", err);
-        alert(err.response?.data?.message || "Error al eliminar la categoría");
-      } finally {
-        setIsSubmitting(false);
-      }
-    }
   };
 
   const handleCreateCategory = () => {
@@ -94,37 +73,23 @@ export default function Categories() {
       setIsSubmitting(true);
       
       if (selectedCategory) {
-        //Editar categoría existente
-        console.log("Actualizando categoría:", selectedCategory.id, formData);
+        // Editar categoría existente
         await categoryService().update(selectedCategory.id, formData);
         alert("Categoría actualizada correctamente");
       } else {
-        //Crear nueva categoría
-        console.log("Creando nueva categoría:", formData);
+        // Crear nueva categoría
         await categoryService().create(formData);
         alert("Categoría creada correctamente");
       }
       
       handleCloseModal();
-      await fetchCategories(); // Recargar la lista
+      await fetchCategories();
       
     } catch (err) {
-      console.error("Error al guardar categoría:", err);
-      
-      const errorMessage = err.response?.data?.message || 
-                          err.response?.data?.error ||
-                          err.message ||
-                          "Error al guardar la categoría";
-      
-      alert(`Error: ${errorMessage}`);
-      
+      alert(err.response?.data?.message || "Error al guardar");
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleSearch = (term) => {
-    setSearchTerm(term);
   };
 
   return (
@@ -132,7 +97,7 @@ export default function Categories() {
       {/* Header */}
       <CategoryHeader 
         onCreateCategory={handleCreateCategory}
-        onSearch={handleSearch}
+        onSearch={setSearchTerm}
         disabled={loading || !!error || isSubmitting}
       />
 
@@ -153,8 +118,7 @@ export default function Categories() {
             <div className="text-lg text-red-600 mb-3">Error: {error}</div>
             <button
               onClick={fetchCategories}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-              disabled={isSubmitting}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
             >
               Reintentar
             </button>
@@ -174,7 +138,6 @@ export default function Categories() {
               <button
                 onClick={handleCreateCategory}
                 className="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                disabled={isSubmitting}
               >
                 Crear primera categoría
               </button>
@@ -191,17 +154,21 @@ export default function Categories() {
             </div>
           ) : (
             /* Tabla con resultados */
-            <Table headers={HEADERS}>
-              {filteredCategories.map((category) => (
-                <CategoryTableRow
-                  key={category.id}
-                  category={category}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  isUpdating={isSubmitting}
-                />
-              ))}
-            </Table>
+            <>
+              <div className="mb-4 text-sm text-gray-600">
+                Mostrando {filteredCategories.length} de {categories.length} categorías
+              </div>
+              <Table headers={HEADERS}>
+                {filteredCategories.map((category) => (
+                  <CategoryTableRow
+                    key={category.id}
+                    category={category}
+                    onEdit={handleEdit}
+                    isUpdating={isSubmitting}
+                  />
+                ))}
+              </Table>
+            </>
           )}
         </>
       )}

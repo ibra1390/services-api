@@ -27,9 +27,9 @@ export function categoryService() {
     },
 
     // Eliminar una categoria
-    delete: async (id) => {
+    /* delete: async (id) => {
       const response = await api.delete(`categories/${id}`);
       return response.data;
-    }
+    } */
   };
 }
