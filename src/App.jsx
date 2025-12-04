@@ -6,6 +6,7 @@ import Users from "./components/users/Users";
 import Categories from "./components/categories/Categories";
 import Roles from "./components/roles/Roles";
 import ProtectedRoute from "./components/common/ProtectedRoute";
+import Students from "./components/students/Students";
 
 export default function App() {
   return (
@@ -23,16 +24,14 @@ export default function App() {
         <Route index element={<Navigate to="/admin/users" replace />} />
         <Route path="users" element={<Users />} />
         <Route path="profile" element={<div className="p-8">Perfil</div>} />
-        <Route
-          path="categories"
-          element={<Categories />} 
-        />
+        <Route path="categories" element={<Categories />} />
         <Route
           path="services"
           element={<div className="p-8">Revisión Servicios</div>}
         />
         <Route path="schools" element={<div className="p-8">Escuelas</div>} />
         <Route path="roles" element={<Roles />} />
+        <Route path="students" element={<Students></Students>} />
       </Route>
     </Routes>
   );

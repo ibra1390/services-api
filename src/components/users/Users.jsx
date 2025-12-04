@@ -5,6 +5,7 @@ import UserHeader from "./UserHeader";
 import UserFilter from "./UserFilter";
 import UserTableRow from "./UserTableRow";
 import UserModal from "./UserModal";
+import UserDetailModal from "./UserDetailModal";
 
 const HEADERS = [
   "ID",
@@ -25,14 +26,11 @@ export default function Users() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-
-  // Cargar usuarios al montar el componente
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   // Función para obtener usuarios
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -44,7 +42,12 @@ export default function Users() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Cargar usuarios al montar el componente
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   // Filtrar usuarios por rol (memoizado)
   const filteredUsers = useMemo(() => {
@@ -74,8 +77,8 @@ export default function Users() {
 
   // Handlers
   const handleView = useCallback((userId) => {
-    console.log("Ver usuario:", userId);
-    // TODO: Implementar vista de detalles
+    setSelectedUserId(userId);
+    setIsDetailModalOpen(true);
   }, []);
 
   const handleEdit = useCallback((user) => {
@@ -83,12 +86,23 @@ export default function Users() {
     setIsModalOpen(true);
   }, []);
 
-  const handleDelete = useCallback((userId) => {
-    if (window.confirm("¿Estás seguro de que deseas eliminar este usuario?")) {
-      console.log("Eliminar usuario:", userId);
-      // TODO: Implementar eliminación
-    }
-  }, []);
+  const handleDelete = useCallback(
+    async (userId) => {
+      if (
+        window.confirm("¿Estás seguro de que deseas eliminar este usuario?")
+      ) {
+        try {
+          await dataService().delete(userId);
+          console.log("Usuario eliminado:", userId);
+          // Recargar la lista de usuarios
+          await fetchUsers();
+        } catch (error) {
+          console.error("Error al eliminar usuario:", error);
+        }
+      }
+    },
+    [fetchUsers]
+  );
 
   const handleCreateUser = useCallback(() => {
     setSelectedUser(null);
@@ -101,12 +115,27 @@ export default function Users() {
   }, []);
 
   const handleModalSubmit = useCallback(
-    (formData) => {
-      console.log("Datos del formulario:", formData);
-      // TODO: Implementar crear/editar usuario
-      handleCloseModal();
+    async (formData, userId = null) => {
+      try {
+        if (userId) {
+          // Editar usuario existente
+          await dataService().update(userId, formData);
+          console.log("Usuario actualizado:", userId);
+        } else {
+          // Crear nuevo usuario
+          await dataService().create(formData);
+          console.log("Usuario creado:", formData);
+        }
+
+        // Recargar la lista de usuarios
+        await fetchUsers();
+        handleCloseModal();
+      } catch (error) {
+        console.error("Error al guardar usuario:", error);
+        // Aquí podrías mostrar un mensaje de error al usuario
+      }
     },
-    [handleCloseModal]
+    [fetchUsers, handleCloseModal]
   );
 
   return (
@@ -147,6 +176,12 @@ export default function Users() {
         onClose={handleCloseModal}
         onSubmit={handleModalSubmit}
         user={selectedUser}
+      />
+
+      <UserDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        userId={selectedUserId}
       />
     </div>
   );

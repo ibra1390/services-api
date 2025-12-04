@@ -1,16 +1,28 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../common/Modal";
 
-export default function CategoryModal({ isOpen, onClose, onSubmit, category, isSubmitting }) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+export default function CategoryModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  category,
+  isSubmitting,
+}) {
+  const [name, setName] = useState(() => category?.name || "");
+  const [description, setDescription] = useState(
+    () => category?.description || ""
+  );
 
+  // Resetear el formulario cuando cambia la categoría
   useEffect(() => {
-    if (isOpen) {
-      setName(category?.name || "");
-      setDescription(category?.description || "");
+    if (category) {
+      setName(category.name || "");
+      setDescription(category.description || "");
+    } else {
+      setName("");
+      setDescription("");
     }
-  }, [isOpen, category]);
+  }, [category]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -71,7 +83,7 @@ export default function CategoryModal({ isOpen, onClose, onSubmit, category, isS
             disabled={isSubmitting || !name.trim()}
             className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
           >
-            {isSubmitting ? "Guardando..." : (category ? "Actualizar" : "Crear")}
+            {isSubmitting ? "Guardando..." : category ? "Actualizar" : "Crear"}
           </button>
         </div>
       </form>
