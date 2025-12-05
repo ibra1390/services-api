@@ -4,6 +4,7 @@ import { categoryService } from "../../services/categoryService";
 import CategoryHeader from "./CategoryHeader";
 import CategoryTableRow from "./CategoryTableRow";
 import CategoryModal from "./CategoryModal";
+import CategoryCard from "./CategoryCard";
 
 const HEADERS = ["ID", "Nombre", "Descripción", "Acciones"];
 
@@ -18,7 +19,7 @@ export default function Categories() {
 
   // 👈 Obtener rol del usuario
   const role = localStorage.getItem("role");
-  const isStudent = role === "STUDENT"; // 👈 bandera para estudiante
+  const isStudent = role === "Student"; // 👈 bandera para estudiante (corregido)
 
   useEffect(() => {
     fetchCategories();
@@ -94,7 +95,20 @@ export default function Categories() {
 
   return (
     <div className="p-8">
-      {/* 👇 Mostrar header solo a administrador */}
+      {/* Header con título solo para estudiantes */}
+      {isStudent && (
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Categorías de Servicio
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Conoce las diferentes categorías disponibles para registrar tus
+            horas de servicio
+          </p>
+        </div>
+      )}
+
+      {/* 👇 Barra de búsqueda y botón crear (solo Admin) */}
       {!isStudent && (
         <CategoryHeader
           onCreateCategory={handleCreateCategory}
@@ -127,9 +141,7 @@ export default function Categories() {
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               ></path>
             </svg>
-            <div className="text-lg text-gray-600">
-              Cargando categorías...
-            </div>
+            <div className="text-lg text-gray-600">Cargando categorías...</div>
           </div>
         </div>
       ) : error ? (
@@ -146,21 +158,34 @@ export default function Categories() {
         </div>
       ) : (
         <>
-          <div className="mb-4 text-sm text-gray-600">
-            Mostrando {filteredCategories.length} de {categories.length} categorías
-          </div>
+          {!isStudent && (
+            <div className="mb-4 text-sm text-gray-600">
+              Mostrando {filteredCategories.length} de {categories.length}{" "}
+              categorías
+            </div>
+          )}
 
-          <Table headers={HEADERS}>
-            {filteredCategories.map((category) => (
-              <CategoryTableRow
-                key={category.id}
-                category={category}
-                onEdit={!isStudent ? handleEdit : undefined} // 👈 estudiante no recibe el botón editar
-                isUpdating={isSubmitting}
-                isStudent={isStudent} // 👈 lo enviamos al row
-              />
-            ))}
-          </Table>
+          {/* Vista de Cards para Estudiantes */}
+          {isStudent ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredCategories.map((category) => (
+                <CategoryCard key={category.id} category={category} />
+              ))}
+            </div>
+          ) : (
+            /* Vista de Tabla para Admin */
+            <Table headers={HEADERS}>
+              {filteredCategories.map((category) => (
+                <CategoryTableRow
+                  key={category.id}
+                  category={category}
+                  onEdit={handleEdit}
+                  isUpdating={isSubmitting}
+                  isStudent={isStudent}
+                />
+              ))}
+            </Table>
+          )}
         </>
       )}
 
