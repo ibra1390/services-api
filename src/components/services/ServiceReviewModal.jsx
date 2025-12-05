@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../common/Modal";
 import { serviceService } from "../../services/serviceService";
+import { downloadEvidence } from "../../utils/downloadHelper";
 
-export default function ServiceReviewModal({ isOpen, onClose, serviceId, onUpdate }) {
+export default function ServiceReviewModal({
+  isOpen,
+  onClose,
+  serviceId,
+  onUpdate,
+}) {
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -32,25 +38,13 @@ export default function ServiceReviewModal({ isOpen, onClose, serviceId, onUpdat
     }
   };
 
-   // Descargar evidencia 
+  // Descargar evidencia
   const handleDownloadEvidence = async () => {
     if (!serviceId) return;
-    
     setDownloading(true);
-    
     try {
-      const response = await serviceService().loadEvidence(serviceId);
-      
-      // Descarga directa
-      const url = window.URL.createObjectURL(response.data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `evidencia_${serviceId}.pdf`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-      
+      await downloadEvidence(serviceId);
     } catch (error) {
-      console.error("Error al descargar:", error);
       alert("Error al descargar");
     } finally {
       setDownloading(false);
@@ -63,7 +57,7 @@ export default function ServiceReviewModal({ isOpen, onClose, serviceId, onUpdat
       alert("Ingresa las horas a aprobar");
       return;
     }
-    
+
     if (!comment) {
       alert("Ingresa un comentario");
       return;
@@ -74,9 +68,9 @@ export default function ServiceReviewModal({ isOpen, onClose, serviceId, onUpdat
       await serviceService().updateReview(serviceId, {
         amount_approved: decision === "approve" ? parseInt(hours) : 0,
         comment,
-        status: decision === "approve" ? "1" : "2"
+        status: decision === "approve" ? "1" : "2",
       });
-      
+
       onUpdate?.();
       alert("Revisión guardada");
       onClose();
@@ -88,7 +82,8 @@ export default function ServiceReviewModal({ isOpen, onClose, serviceId, onUpdat
   };
 
   // Revisar para aprobar o rechazar
-  const isReviewed = service?.status === "Approved" || service?.status === "Rejected";
+  const isReviewed =
+    service?.status === "Approved" || service?.status === "Rejected";
 
   if (loading) {
     return (
@@ -109,7 +104,9 @@ export default function ServiceReviewModal({ isOpen, onClose, serviceId, onUpdat
         {isReviewed && (
           <div className="bg-yellow-50 p-4 rounded-lg">
             <p className="text-yellow-700 font-medium">
-              {service.status === "Approved" ? "✅ Ya aprobado" : "❌ Ya rechazado"}
+              {service.status === "Approved"
+                ? "✅ Ya aprobado"
+                : "❌ Ya rechazado"}
             </p>
             <p className="text-sm text-yellow-600 mt-1">Solo lectura</p>
           </div>
@@ -122,34 +119,50 @@ export default function ServiceReviewModal({ isOpen, onClose, serviceId, onUpdat
           </h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <span className="text-sm font-medium text-gray-600">Estudiante:</span>
+              <span className="text-sm font-medium text-gray-600">
+                Estudiante:
+              </span>
               <p className="text-sm text-gray-900">{service.user?.full_name}</p>
             </div>
             <div>
-              <span className="text-sm font-medium text-gray-600">Categoría:</span>
+              <span className="text-sm font-medium text-gray-600">
+                Categoría:
+              </span>
               <p className="text-sm text-gray-900">{service.category?.name}</p>
             </div>
             <div>
-              <span className="text-sm font-medium text-gray-600">Horas Reportadas:</span>
-              <p className="text-sm text-gray-900 font-bold">{service.amount_reported || 0}h</p>
+              <span className="text-sm font-medium text-gray-600">
+                Horas Reportadas:
+              </span>
+              <p className="text-sm text-gray-900 font-bold">
+                {service.amount_reported || 0}h
+              </p>
             </div>
             <div>
               <span className="text-sm font-medium text-gray-600">Estado:</span>
-              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                service.status === "Approved" ? "bg-green-100 text-green-700" :
-                service.status === "Rejected" ? "bg-red-100 text-red-700" :
-                "bg-yellow-100 text-yellow-700"
-              }`}>
-                {service.status === "Approved" ? "Aprobado" : 
-                 service.status === "Rejected" ? "Rechazado" : 
-                 "Pendiente"}
+              <span
+                className={`text-xs px-2 py-1 rounded-full font-medium ${
+                  service.status === "Approved"
+                    ? "bg-green-100 text-green-700"
+                    : service.status === "Rejected"
+                    ? "bg-red-100 text-red-700"
+                    : "bg-yellow-100 text-yellow-700"
+                }`}
+              >
+                {service.status === "Approved"
+                  ? "Aprobado"
+                  : service.status === "Rejected"
+                  ? "Rechazado"
+                  : "Pendiente"}
               </span>
             </div>
           </div>
 
           {/* Botón de descargar evidencia */}
           <div className="mt-4 pt-3 border-t">
-            <span className="text-sm font-medium text-gray-600 mb-2 block">Evidencia:</span>
+            <span className="text-sm font-medium text-gray-600 mb-2 block">
+              Evidencia:
+            </span>
             <button
               onClick={handleDownloadEvidence}
               disabled={downloading}
@@ -158,18 +171,26 @@ export default function ServiceReviewModal({ isOpen, onClose, serviceId, onUpdat
               {downloading ? "Descargando..." : "Descargar PDF"}
             </button>
           </div>
-          
+
           {service.description && (
             <div className="mt-3 pt-3 border-t">
-              <span className="text-sm font-medium text-gray-600">Descripción:</span>
-              <p className="text-sm text-gray-900 mt-1">{service.description}</p>
+              <span className="text-sm font-medium text-gray-600">
+                Descripción:
+              </span>
+              <p className="text-sm text-gray-900 mt-1">
+                {service.description}
+              </p>
             </div>
           )}
-          
+
           {service.comment && (
             <div className="mt-3 pt-3 border-t">
-              <span className="text-sm font-medium text-gray-600">Comentario:</span>
-              <p className="text-sm text-gray-900 mt-1 italic">"{service.comment}"</p>
+              <span className="text-sm font-medium text-gray-600">
+                Comentario:
+              </span>
+              <p className="text-sm text-gray-900 mt-1 italic">
+                "{service.comment}"
+              </p>
             </div>
           )}
         </div>
@@ -180,21 +201,31 @@ export default function ServiceReviewModal({ isOpen, onClose, serviceId, onUpdat
             <h3 className="text-lg font-semibold text-gray-900 mb-3">
               Revisión
             </h3>
-            
+
             <div className="space-y-4">
               {/* Decisión */}
               <div>
-                <span className="text-sm font-medium text-gray-600">Decisión:</span>
+                <span className="text-sm font-medium text-gray-600">
+                  Decisión:
+                </span>
                 <div className="flex gap-4 mt-2">
                   <button
                     onClick={() => setDecision("approve")}
-                    className={`px-4 py-2 rounded-lg ${decision === "approve" ? "bg-green-100 text-green-700 border border-green-300" : "bg-gray-100 text-gray-700"}`}
+                    className={`px-4 py-2 rounded-lg ${
+                      decision === "approve"
+                        ? "bg-green-100 text-green-700 border border-green-300"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
                   >
                     Aprobar
                   </button>
                   <button
                     onClick={() => setDecision("reject")}
-                    className={`px-4 py-2 rounded-lg ${decision === "reject" ? "bg-red-100 text-red-700 border border-red-300" : "bg-gray-100 text-gray-700"}`}
+                    className={`px-4 py-2 rounded-lg ${
+                      decision === "reject"
+                        ? "bg-red-100 text-red-700 border border-red-300"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
                   >
                     Rechazar
                   </button>
@@ -204,7 +235,9 @@ export default function ServiceReviewModal({ isOpen, onClose, serviceId, onUpdat
               {/* Horas (solo si aprobar) */}
               {decision === "approve" && (
                 <div>
-                  <span className="text-sm font-medium text-gray-600">Horas a aprobar:</span>
+                  <span className="text-sm font-medium text-gray-600">
+                    Horas a aprobar:
+                  </span>
                   <input
                     type="number"
                     value={hours}
@@ -222,7 +255,9 @@ export default function ServiceReviewModal({ isOpen, onClose, serviceId, onUpdat
 
               {/* Comentario */}
               <div>
-                <span className="text-sm font-medium text-gray-600">Comentario:</span>
+                <span className="text-sm font-medium text-gray-600">
+                  Comentario:
+                </span>
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
@@ -243,14 +278,22 @@ export default function ServiceReviewModal({ isOpen, onClose, serviceId, onUpdat
           >
             {isReviewed ? "Cerrar" : "Cancelar"}
           </button>
-          
+
           {!isReviewed && (
             <button
               onClick={saveReview}
               disabled={saving}
-              className={`flex-1 px-4 py-2 text-white rounded-lg ${decision === "approve" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"} disabled:opacity-50`}
+              className={`flex-1 px-4 py-2 text-white rounded-lg ${
+                decision === "approve"
+                  ? "bg-green-600 hover:bg-green-700"
+                  : "bg-red-600 hover:bg-red-700"
+              } disabled:opacity-50`}
             >
-              {saving ? "Guardando..." : decision === "approve" ? "Aprobar" : "Rechazar"}
+              {saving
+                ? "Guardando..."
+                : decision === "approve"
+                ? "Aprobar"
+                : "Rechazar"}
             </button>
           )}
         </div>

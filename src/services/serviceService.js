@@ -2,14 +2,22 @@ import { api } from "../hooks/useAxiosData";
 
 export function serviceService() {
   return {
-
-     getAll: async () => {
+    getAll: async () => {
       const response = await api.get("services");
       return response.data;
     },
 
     getById: async (id) => {
       const response = await api.get(`services/${id}`);
+      return response.data;
+    },
+
+    create: async (formData) => {
+      const response = await api.post("services", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       return response.data;
     },
 
@@ -20,7 +28,7 @@ export function serviceService() {
 
     loadEvidence: async (id) => {
       const response = await api.get(`evidence/${id}`, {
-        responseType: 'blob'  
+        responseType: "blob",
       });
       return response;
     },
