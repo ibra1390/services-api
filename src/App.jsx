@@ -8,6 +8,7 @@ import Roles from "./components/roles/Roles";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import Students from "./components/students/Students";
 import Schools from "./components/schools/Schools";
+import Services from "./components/services/Services";
 
 export default function App() {
   return (
@@ -28,7 +29,7 @@ export default function App() {
         <Route path="categories" element={<Categories />} />
         <Route
           path="services"
-          element={<div className="p-8">Revisión Servicios</div>}
+          element={<Services />}
         />
         <Route path="schools" element={<Schools/>} />
         <Route path="roles" element={<Roles />} />
