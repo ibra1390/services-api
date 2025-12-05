@@ -372,8 +372,6 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
               </div>
             </div>
           )}
-
-          {/* Botones - FUERA del scroll */}
           <div className="sticky bottom-0 bg-white pt-4 border-t border-gray-200 -mx-2 px-2">
             <div className="flex gap-3">
               <button
