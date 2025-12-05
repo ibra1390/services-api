@@ -21,7 +21,7 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
   const [controllers, setControllers] = useState([]);
   const [recruiters, setRecruiters] = useState([]);
 
-  // Cargar escuelas, controllers y recruiters al abrir el modal
+  // Cargar datos necesarios solo al crear usuario
   useEffect(() => {
     if (isOpen && !user) {
       const loadData = async () => {
@@ -32,6 +32,7 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
               dataService().getControllers(),
               dataService().getRecruiters(),
             ]);
+
           setSchools(schoolsData);
           setControllers(controllersData);
           setRecruiters(recruitersData);
@@ -39,80 +40,125 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
           console.error("Error al cargar datos:", error);
         }
       };
+
       loadData();
     }
   }, [isOpen, user]);
-  // Calcular el estado inicial basado en el usuario
+
+  // ESTADO INICIAL
   const initialState = useMemo(() => {
     if (user) {
-      // Para editar: solo campos editables
       return {
         f_name: user.f_name || "",
-        s_name: user.m_name || user.s_name || "", // Manejar m_name o s_name
+        s_name: user.s_name || user.m_name || "",
         f_lastname: user.f_lastname || "",
         s_lastname: user.s_lastname || "",
       };
     }
-    // Para crear: todos los campos
     return INITIAL_FORM_STATE;
   }, [user]);
 
   const [formData, setFormData] = useState(initialState);
 
-  // Resetear el formulario cuando cambia el usuario
   useEffect(() => {
     setFormData(initialState);
   }, [initialState]);
 
+  // ON CHANGE
   const handleChange = (e) => {
     const { name, value, type, options } = e.target;
 
+    // select-multiple → escuelas
     if (type === "select-multiple") {
-      // Manejar selección múltiple para escuelas
-      const selectedValues = Array.from(options)
-        .filter((option) => option.selected)
-        .map((option) => parseInt(option.value));
-      setFormData((prev) => ({ ...prev, [name]: selectedValues }));
-    } else {
-      // Manejar country_id como número
-      let newValue = value;
-      if (name === "country_id") {
-        newValue = value ? parseInt(value) : null;
-      } else if (type === "number") {
-        newValue = value ? parseInt(value) : null;
-      }
-
-      setFormData((prev) => ({
-        ...prev,
-        [name]: newValue,
-        // Resetear campos específicos de estudiantes si cambia el rol
-        ...(name === "role_id" &&
-          newValue !== 4 && {
-            controller_id: null,
-            recruiter_id: null,
-            schools: [],
-          }),
-      }));
+      const selected = Array.from(options)
+        .filter((opt) => opt.selected)
+        .map((opt) => Number(opt.value));
+      setFormData((prev) => ({ ...prev, [name]: selected }));
+      return;
     }
+
+    let newValue = value;
+
+    if (name === "role_id" || name === "country_id") {
+      newValue = value ? Number(value) : null;
+    }
+
+    if (type === "number") {
+      newValue = value ? Number(value) : null;
+    }
+
+    // Cambiar rol → limpiar campos específicos
+    if (name === "role_id") {
+      if (Number(value) !== 4) {
+        return setFormData((prev) => ({
+          ...prev,
+          role_id: Number(value),
+          controller_id: null,
+          recruiter_id: null,
+          schools: [],
+        }));
+      }
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: newValue }));
   };
 
+  // SUBMIT
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (user) {
-      // Para editar: solo enviar campos editables
-      const updateData = {
-        f_name: formData.f_name,
-        s_name: formData.s_name,
-        f_lastname: formData.f_lastname,
-        s_lastname: formData.s_lastname,
-      };
-      onSubmit(updateData, user.id);
-    } else {
-      // Para crear: enviar todos los campos necesarios
-      onSubmit(formData);
+    let dataToSend = { ...formData };
+
+    // Normalizar valores
+    dataToSend.role_id = Number(dataToSend.role_id);
+    if (dataToSend.country_id) {
+      dataToSend.country_id = Number(dataToSend.country_id);
     }
 
+    // STUDENT → requiere controller_id, recruiter_id, schools
+    if (dataToSend.role_id === 4) {
+      dataToSend.controller_id = Number(dataToSend.controller_id);
+      dataToSend.recruiter_id = Number(dataToSend.recruiter_id);
+      dataToSend.schools = dataToSend.schools.map((id) => Number(id));
+    } else {
+      delete dataToSend.controller_id;
+      delete dataToSend.recruiter_id;
+      delete dataToSend.schools;
+    }
+
+    // Eliminar campos vacíos EXCEPTO s_name que debe existir
+    Object.keys(dataToSend).forEach((key) => {
+      if (key === "s_name") return; // backend la necesita
+      if (
+        dataToSend[key] === "" ||
+        dataToSend[key] === null ||
+        dataToSend[key] === undefined
+      ) {
+        delete dataToSend[key];
+      }
+    });
+
+    // Log exacto de lo que enviamos
+    console.log("📤 Enviando al backend:", dataToSend);
+
+    // UPDATE (solo 4 campos permitidos)
+    if (user) {
+      const updateData = {
+        f_name: dataToSend.f_name,
+        s_name: dataToSend.s_name,
+        f_lastname: dataToSend.f_lastname,
+        s_lastname: dataToSend.s_lastname,
+      };
+
+      console.log("📤 UPDATE DATA:", updateData);
+
+      onSubmit(updateData, user.id);
+      onClose();
+      return;
+    }
+
+    // CREATE
+    onSubmit(dataToSend);
     onClose();
   };
 
@@ -123,9 +169,7 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
       title={user ? "Editar Usuario" : "Crear Usuario"}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Layout en columnas para el formulario de crear */}
         <div className={!user ? "grid grid-cols-2 gap-4" : "space-y-4"}>
-          {/* Campos comunes para crear y editar */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Primer Nombre *
@@ -135,8 +179,8 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
               name="f_name"
               value={formData.f_name}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               required
+              className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
 
@@ -149,7 +193,7 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
               name="s_name"
               value={formData.s_name}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
 
@@ -162,8 +206,8 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
               name="f_lastname"
               value={formData.f_lastname}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               required
+              className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
 
@@ -176,13 +220,13 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
               name="s_lastname"
               value={formData.s_lastname}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               required
+              className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
         </div>
 
-        {/* Campos solo para crear */}
+        {/* CAMPOS SOLO PARA CREAR */}
         {!user && (
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -194,8 +238,8 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 required
+                className="w-full px-3 py-2 border rounded-lg"
               />
             </div>
 
@@ -208,8 +252,8 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 required
+                className="w-full px-3 py-2 border rounded-lg"
               />
             </div>
 
@@ -221,8 +265,7 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
                 name="role_id"
                 value={formData.role_id}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                required
+                className="w-full px-3 py-2 border rounded-lg"
               >
                 <option value={1}>Admin</option>
                 <option value={2}>Controller</option>
@@ -233,21 +276,18 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                País * (ID numérico)
+                País *
               </label>
               <input
                 type="number"
                 name="country_id"
                 value={formData.country_id || ""}
                 onChange={handleChange}
-                placeholder="Ej: 1 para Guatemala, 2 para México..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 required
-                min="1"
+                className="w-full px-3 py-2 border rounded-lg"
               />
             </div>
 
-            {/* Campos adicionales para estudiantes */}
             {formData.role_id === 4 && (
               <>
                 <div>
@@ -258,13 +298,13 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
                     name="controller_id"
                     value={formData.controller_id || ""}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     required
+                    className="w-full px-3 py-2 border rounded-lg"
                   >
                     <option value="">Seleccionar Controller</option>
-                    {controllers.map((controller) => (
-                      <option key={controller.id} value={controller.id}>
-                        {controller.f_name} {controller.f_lastname}
+                    {controllers.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.f_name} {c.f_lastname}
                       </option>
                     ))}
                   </select>
@@ -278,13 +318,13 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
                     name="recruiter_id"
                     value={formData.recruiter_id || ""}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     required
+                    className="w-full px-3 py-2 border rounded-lg"
                   >
                     <option value="">Seleccionar Recruiter</option>
-                    {recruiters.map((recruiter) => (
-                      <option key={recruiter.id} value={recruiter.id}>
-                        {recruiter.f_name} {recruiter.f_lastname}
+                    {recruiters.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.f_name} {r.f_lastname}
                       </option>
                     ))}
                   </select>
@@ -292,16 +332,14 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
 
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Escuelas * (Mantén presionado Ctrl/Cmd para seleccionar
-                    múltiples)
+                    Escuelas *
                   </label>
                   <select
                     name="schools"
                     multiple
                     value={formData.schools}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[120px]"
-                    required
+                    className="w-full px-3 py-2 border rounded-lg min-h-[120px]"
                   >
                     {schools.map((school) => (
                       <option key={school.id} value={school.id}>
@@ -315,18 +353,17 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
           </div>
         )}
 
-        {/* Botones */}
         <div className="flex gap-3 pt-4">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex-1 px-4 py-2 border rounded-lg"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg"
           >
             {user ? "Actualizar Usuario" : "Crear Usuario"}
           </button>

@@ -122,6 +122,8 @@ export default function Users() {
           await dataService().update(userId, formData);
           console.log("Usuario actualizado:", userId);
         } else {
+            console.log("ENVIANDO AL BACKEND:", formData);
+
           // Crear nuevo usuario
           await dataService().create(formData);
           console.log("Usuario creado:", formData);
