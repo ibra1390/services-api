@@ -40,6 +40,12 @@ export function dataService() {
       // Filtrar solo usuarios con role_id = 3 (Recruiter)
       return response.data.filter((user) => user.role_id === 3);
     },
+
+    // Obtener lista de países
+    getCountries: async () => {
+      const response = await api.get("countries");
+      return response.data;
+    },
   };
 }
 

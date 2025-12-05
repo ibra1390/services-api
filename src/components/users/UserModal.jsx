@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import Modal from "../common/Modal";
 import { schoolService, dataService } from "../../services/dataService";
 
+// Formulario para crear y editar usuarios
 const INITIAL_FORM_STATE = {
   f_name: "",
   s_name: "",
@@ -20,22 +21,26 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
   const [schools, setSchools] = useState([]);
   const [controllers, setControllers] = useState([]);
   const [recruiters, setRecruiters] = useState([]);
+  const [countries, setCountries] = useState([]);
 
   // Cargar datos necesarios solo al crear usuario
   useEffect(() => {
     if (isOpen && !user) {
       const loadData = async () => {
         try {
-          const [schoolsData, controllersData, recruitersData] =
+          const [schoolsData, controllersData, recruitersData, countriesData] =
             await Promise.all([
               schoolService().getAll(),
               dataService().getControllers(),
               dataService().getRecruiters(),
+              dataService().getCountries(),
             ]);
 
           setSchools(schoolsData);
           setControllers(controllersData);
           setRecruiters(recruitersData);
+          setCountries(countriesData);
+          console.log("Países cargados:", countriesData); // Debug
         } catch (error) {
           console.error("Error al cargar datos:", error);
         }
@@ -103,6 +108,16 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
     setFormData((prev) => ({ ...prev, [name]: newValue }));
   };
 
+  // Manejar selección de escuelas con checkboxes
+  const handleSchoolToggle = (schoolId) => {
+    setFormData((prev) => {
+      const schools = prev.schools.includes(schoolId)
+        ? prev.schools.filter((id) => id !== schoolId)
+        : [...prev.schools, schoolId];
+      return { ...prev, schools };
+    });
+  };
+
   // SUBMIT
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -163,229 +178,235 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
       onClose={onClose}
       title={user ? "Editar Usuario" : "Crear Usuario"}
     >
-      <div className="max-h-[70vh] overflow-y-auto pr-2">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-300">
-              Información Personal
-            </h3>
-            
-            <div className={!user ? "grid grid-cols-2 gap-4" : "space-y-4"}>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Primer Nombre <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="f_name"
-                  value={formData.f_name}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                  placeholder="Ej: Juan"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Segundo Nombre
-                </label>
-                <input
-                  type="text"
-                  name="s_name"
-                  value={formData.s_name}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                  placeholder="Ej: Carlos"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Apellido Paterno <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="f_lastname"
-                  value={formData.f_lastname}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                  placeholder="Ej: Pérez"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Apellido Materno <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="s_lastname"
-                  value={formData.s_lastname}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                  placeholder="Ej: García"
-                />
-              </div>
-            </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className={!user ? "grid grid-cols-2 gap-4" : "space-y-4"}>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Primer Nombre *
+            </label>
+            <input
+              type="text"
+              name="f_name"
+              value={formData.f_name}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border rounded-lg"
+            />
           </div>
 
-          {/* CAMPOS SOLO PARA CREAR */}
-          {!user && (
-            <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-300">
-                Información de Cuenta
-              </h3>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                    placeholder="ejemplo@email.com"
-                  />
-                </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Segundo Nombre
+            </label>
+            <input
+              type="text"
+              name="s_name"
+              value={formData.s_name}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border rounded-lg"
+            />
+          </div>
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Contraseña <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                    placeholder="••••••••"
-                  />
-                </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Apellido Paterno *
+            </label>
+            <input
+              type="text"
+              name="f_lastname"
+              value={formData.f_lastname}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border rounded-lg"
+            />
+          </div>
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Rol <span className="text-red-500">*</span>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Apellido Materno *
+            </label>
+            <input
+              type="text"
+              name="s_lastname"
+              value={formData.s_lastname}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border rounded-lg"
+            />
+          </div>
+        </div>
+
+        {/* CAMPOS SOLO PARA CREAR */}
+        {!user && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email *
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2 border rounded-lg"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Contraseña *
+              </label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2 border rounded-lg"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Rol *
+              </label>
+              <select
+                name="role_id"
+                value={formData.role_id}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg"
+              >
+                <option value={1}>Admin</option>
+                <option value={2}>Controller</option>
+                <option value={3}>Recruiter</option>
+                <option value={4}>Student</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                País *
+              </label>
+              <select
+                name="country_id"
+                value={formData.country_id || ""}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2 border rounded-lg"
+              >
+                <option value="">
+                  {countries.length === 0
+                    ? "Cargando países..."
+                    : "Seleccionar País"}
+                </option>
+                {countries.map((country) => (
+                  <option key={country.id} value={country.id}>
+                    {country.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {formData.role_id === 4 && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Controller *
                   </label>
                   <select
-                    name="role_id"
-                    value={formData.role_id}
+                    name="controller_id"
+                    value={formData.controller_id || ""}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white"
+                    required
+                    className="w-full px-3 py-2 border rounded-lg"
                   >
-                    <option value={1}>Admin</option>
-                    <option value={2}>Controller</option>
-                    <option value={3}>Recruiter</option>
-                    <option value={4}>Student</option>
+                    <option value="">Seleccionar Controller</option>
+                    {controllers.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.f_name} {c.f_lastname}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    País <span className="text-red-500">*</span>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Recruiter *
                   </label>
-                  <input
-                    type="number"
-                    name="country_id"
-                    value={formData.country_id || ""}
+                  <select
+                    name="recruiter_id"
+                    value={formData.recruiter_id || ""}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                    placeholder="Ej: 1"
-                  />
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
+                    <option value="">Seleccionar Recruiter</option>
+                    {recruiters.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.f_name} {r.f_lastname}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                {formData.role_id === 4 && (
-                  <>
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Controller <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        name="controller_id"
-                        value={formData.controller_id || ""}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white"
-                      >
-                        <option value="">Seleccionar Controller</option>
-                        {controllers.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.f_name} {c.f_lastname}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Recruiter <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        name="recruiter_id"
-                        value={formData.recruiter_id || ""}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white"
-                      >
-                        <option value="">Seleccionar Recruiter</option>
-                        {recruiters.map((r) => (
-                          <option key={r.id} value={r.id}>
-                            {r.f_name} {r.f_lastname}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="col-span-2 space-y-2">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Escuelas <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        name="schools"
-                        multiple
-                        value={formData.schools}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white min-h-[100px]"
-                      >
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Escuelas *
+                  </label>
+                  <div className="w-full px-3 py-2 border rounded-lg max-h-[200px] overflow-y-auto bg-gray-50">
+                    {schools.length === 0 ? (
+                      <p className="text-sm text-gray-500">
+                        Cargando escuelas...
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
                         {schools.map((school) => (
-                          <option key={school.id} value={school.id}>
-                            {school.name}
-                          </option>
+                          <label
+                            key={school.id}
+                            className="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 p-2 rounded"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData.schools.includes(school.id)}
+                              onChange={() => handleSchoolToggle(school.id)}
+                              className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                            />
+                            <span className="text-sm text-gray-700">
+                              {school.name}
+                            </span>
+                          </label>
                         ))}
-                      </select>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-          <div className="sticky bottom-0 bg-white pt-4 border-t border-gray-200 -mx-2 px-2">
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-              >
-                {user ? "Actualizar Usuario" : "Crear Usuario"}
-              </button>
-            </div>
+                      </div>
+                    )}
+                  </div>
+                  {formData.schools.length === 0 && (
+                    <p className="text-xs text-red-500 mt-1">
+                      Debe seleccionar al menos una escuela
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
-        </form>
-      </div>
+        )}
+
+        <div className="flex gap-3 pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border rounded-lg"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg"
+          >
+            {user ? "Actualizar Usuario" : "Crear Usuario"}
+          </button>
+        </div>
+      </form>
     </Modal>
   );
 }
