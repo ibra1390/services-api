@@ -3,6 +3,9 @@ import React, { useState } from "react";
 export default function CategoryHeader({ onCreateCategory, onSearch, disabled }) {
   const [search, setSearch] = useState("");
 
+  // Obtener rol del usuario
+  const role = localStorage.getItem("role");
+
   // Manejar cambios en la búsqueda
   const handleSearchChange = (e) => {
     const value = e.target.value;
@@ -21,26 +24,35 @@ export default function CategoryHeader({ onCreateCategory, onSearch, disabled })
       {/* Título y botón de crear */}
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-3xl font-bold text-gray-900">Categorías</h1>
-        <button
-          onClick={onCreateCategory}
-          disabled={disabled}
-          className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-50"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Nueva Categoría
-        </button>
+
+        {/* Ocultar el botón si el usuario es STUDENT */}
+        {role !== "STUDENT" && (
+          <button
+            onClick={onCreateCategory}
+            disabled={disabled}
+            className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-50"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Nueva Categoría
+          </button>
+        )}
       </div>
 
       {/* Barra de búsqueda */}
       <div className="relative max-w-md">
         <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
           <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
           </svg>
         </div>
-        
+
         {/* Input de búsqueda */}
         <input
           type="text"
@@ -59,8 +71,18 @@ export default function CategoryHeader({ onCreateCategory, onSearch, disabled })
             disabled={disabled}
             type="button"
           >
-            <svg className="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-5 h-5 text-gray-400 hover:text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         )}

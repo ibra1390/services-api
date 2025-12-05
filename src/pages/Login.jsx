@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../services/dataService";
+import axios from "axios";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -17,25 +18,53 @@ export default function Login() {
     try {
       console.log("Login - Enviando credenciales...");
       const response = await authService().login(email, password);
+
       console.log("Login - Respuesta completa:", response);
 
-      // El API enví­a el token como cookie, no en el body
-      // Solo verificamos que el login fue exitoso
-      if (
+      // El API solo devuelve cookie. Validamos éxito:
+      const success =
         response.status === "success" ||
-        response.message === "Login successful"
-      ) {
-        // Guardamos un flag de autenticación
-        localStorage.setItem("token", "authenticated"); // Cookie manejada por el navegador
-        localStorage.setItem("role", "admin"); // Por defecto, ajustar según necesites
+        response.message === "Login successful";
 
-        console.log("Login - Login exitoso, cookie recibida");
+      if (!success) {
+        throw new Error("Error en el login: " + (response.message || "Desconocido"));
+      }
+
+      console.log("Login - Login exitoso, cookie recibida");
+
+      // Guardamos únicamente un flag, el token lo maneja la COOKIE
+      localStorage.setItem("token", "authenticated");
+
+      // ====== 🔥 OBTENER PERFIL REAL DESPUÉS DEL LOGIN ======
+      console.log("Login - Obteniendo perfil...");
+      const profileResponse = await axios.get(
+        "https://www.hs-service.api.crealape.com/api/v1/auth/profile",
+        {
+          withCredentials: true,
+        }
+      );
+
+      const roleName = profileResponse.data.role?.name;
+
+      if (!roleName) {
+        throw new Error("No se pudo obtener el rol del usuario.");
+      }
+
+      // Guardar el rol real del backend
+      localStorage.setItem("role", roleName);
+
+      console.log("Login - Rol guardado:", roleName);
+
+      // ====== 🔥 REDIRECCIÓN SEGÚN ROL ======
+      if (roleName === "Admin") {
         console.log("Login - Redirigiendo a /admin/users");
         navigate("/admin/users");
+      } else if (roleName === "Student") {
+        console.log("Login - Redirigiendo a /student");
+        navigate("/student");
       } else {
-        throw new Error(
-          "Error en el login: " + (response.message || "Respuesta inesperada")
-        );
+        console.log("Login - Rol desconocido, regresando al login");
+        navigate("/login");
       }
     } catch (err) {
       console.error("Login - Error completo:", err);
@@ -71,17 +100,16 @@ export default function Login() {
             Your email
           </label>
           <input
-            onChange={(e) => {
-              setEmail(e.target.value);
-            }}
+            onChange={(e) => setEmail(e.target.value)}
             type="email"
             id="email"
             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
             placeholder="name@flowbite.com"
-            required=""
+            required
             disabled={loading}
           />
         </div>
+
         <div className="mb-5">
           <label
             htmlFor="password"
@@ -90,23 +118,21 @@ export default function Login() {
             Your password
           </label>
           <input
-            onChange={(e) => {
-              setPassword(e.target.value);
-            }}
+            onChange={(e) => setPassword(e.target.value)}
             type="password"
             id="password"
             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            required=""
+            required
             disabled={loading}
           />
         </div>
+
         <div className="flex items-start mb-5">
           <div className="flex items-center h-5">
             <input
               id="remember"
               type="checkbox"
-              defaultValue=""
-              className="w-4 h-4 border border-gray-300 rounded-sm bg-gray-50 focus:ring-3 focus:ring-blue-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800"
+              className="w-4 h-4 border border-gray-300 rounded-sm bg-gray-50 focus:ring-3 focus:ring-blue-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-blue-600"
               disabled={loading}
             />
           </div>
@@ -117,6 +143,7 @@ export default function Login() {
             Remember me
           </label>
         </div>
+
         <div className="flex gap-4">
           <button
             type="submit"
@@ -125,6 +152,7 @@ export default function Login() {
           >
             {loading ? "Cargando..." : "Submit"}
           </button>
+
           <button
             onClick={crearCuenta}
             type="button"
