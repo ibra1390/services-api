@@ -138,9 +138,6 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
       }
     });
 
-    // Log exacto de lo que enviamos
-    console.log("📤 Enviando al backend:", dataToSend);
-
     // UPDATE (solo 4 campos permitidos)
     if (user) {
       const updateData = {
@@ -149,8 +146,6 @@ export default function UserModal({ isOpen, onClose, onSubmit, user = null }) {
         f_lastname: dataToSend.f_lastname,
         s_lastname: dataToSend.s_lastname,
       };
-
-      console.log("📤 UPDATE DATA:", updateData);
 
       onSubmit(updateData, user.id);
       onClose();

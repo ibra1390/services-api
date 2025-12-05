@@ -11,8 +11,10 @@ import Roles from "./components/roles/Roles";
 import Students from "./components/students/Students";
 import Schools from "./components/schools/Schools";
 import Services from "./components/services/Services";
+import StudentServices from "./components/services/StudentServices";
 
 import ProtectedRoute from "./components/common/ProtectedRoute";
+import NotFound from "./components/common/NotFound";
 
 export default function App() {
   return (
@@ -42,6 +44,8 @@ export default function App() {
         <Route path="schools" element={<Schools />} />
         <Route path="roles" element={<Roles />} />
         <Route path="students" element={<Students />} />
+        {/* Ruta catch-all para rutas admin inválidas */}
+        <Route path="*" element={<Navigate to="/admin/users" replace />} />
       </Route>
 
       {/** -------------------------
@@ -55,8 +59,15 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<div className="p-8">Bienvenido estudiante</div>} /> 
+        <Route index element={<Navigate to="/student/services" replace />} />
+        <Route path="services" element={<StudentServices />} />
+        <Route path="categories" element={<Categories />} />
+        {/* Ruta catch-all para rutas student inválidas */}
+        <Route path="*" element={<Navigate to="/student/services" replace />} />
       </Route>
+
+      {/* Ruta catch-all global para cualquier otra ruta inválida */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

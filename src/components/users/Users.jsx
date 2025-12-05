@@ -93,8 +93,6 @@ export default function Users() {
       ) {
         try {
           await dataService().delete(userId);
-          console.log("Usuario eliminado:", userId);
-          // Recargar la lista de usuarios
           await fetchUsers();
         } catch (error) {
           console.error("Error al eliminar usuario:", error);
@@ -118,18 +116,11 @@ export default function Users() {
     async (formData, userId = null) => {
       try {
         if (userId) {
-          // Editar usuario existente
           await dataService().update(userId, formData);
-          console.log("Usuario actualizado:", userId);
         } else {
-            console.log("ENVIANDO AL BACKEND:", formData);
-
-          // Crear nuevo usuario
           await dataService().create(formData);
-          console.log("Usuario creado:", formData);
         }
 
-        // Recargar la lista de usuarios
         await fetchUsers();
         handleCloseModal();
       } catch (error) {

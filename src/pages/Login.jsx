@@ -5,7 +5,6 @@ import axios from "axios";
 import galaxia from "../image/galaxia.mp4";
 import LOGOFUNVALblan from "../image/LOGOFUNVALblan.png";
 
-
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,11 +17,11 @@ export default function Login() {
     setLoading(true);
     setError(null);
 
-    try {
-      console.log("Login - Enviando credenciales...");
-      const response = await authService().login(email, password);
+    // Limpiar localStorage antes de iniciar sesión
+    localStorage.removeItem("role");
 
-      console.log("Login - Respuesta completa:", response);
+    try {
+      const response = await authService().login(email, password);
 
       // El API solo devuelve cookie. Validamos éxito:
       const success =
@@ -30,16 +29,12 @@ export default function Login() {
         response.message === "Login successful";
 
       if (!success) {
-        throw new Error("Error en el login: " + (response.message || "Desconocido"));
+        throw new Error(
+          "Error en el login: " + (response.message || "Desconocido")
+        );
       }
 
-      console.log("Login - Login exitoso, cookie recibida");
-
-      // Guardamos únicamente un flag, el token lo maneja la COOKIE
-      localStorage.setItem("token", "authenticated");
-
-      // ====== 🔥 OBTENER PERFIL REAL DESPUÉS DEL LOGIN ======
-      console.log("Login - Obteniendo perfil...");
+      // Obtener perfil después del login
       const profileResponse = await axios.get(
         "https://www.hs-service.api.crealape.com/api/v1/auth/profile",
         {
@@ -56,21 +51,15 @@ export default function Login() {
       // Guardar el rol real del backend
       localStorage.setItem("role", roleName);
 
-      console.log("Login - Rol guardado:", roleName);
-
-      // ====== 🔥 REDIRECCIÓN SEGÚN ROL ======
+      // Redirección según rol
       if (roleName === "Admin") {
-        console.log("Login - Redirigiendo a /admin/users");
         navigate("/admin/users");
       } else if (roleName === "Student") {
-        console.log("Login - Redirigiendo a /student");
         navigate("/student");
       } else {
-        console.log("Login - Rol desconocido, regresando al login");
         navigate("/login");
       }
     } catch (err) {
-      console.error("Login - Error completo:", err);
       setError(
         err.response?.data?.message || err.message || "Credenciales incorrectas"
       );
